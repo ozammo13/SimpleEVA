@@ -1,5 +1,6 @@
 from evasdk import Eva
 from typing import List, Tuple, NamedTuple
+import json
 
 import time
 # Define the x and y coordinates for 3 corners of the grid
@@ -36,11 +37,37 @@ class RobotArm:
         self.eva.control_go_to(position_joint_angles)
     def GoToHome(self):
         self.eva.control_go_to(self.Home)
-    def MoveEndAffector(self):
-        self.target_position = {'x': self.XYZ.x, 'y': self.XYZ.y, 'z': self.XYZ.z}
-        position_joint_angles = self.eva.calc_inverse_kinematics(self.Home,self.target_position,self.end_effector_orientation)
-        self.eva.control_go_to(position_joint_angles)
+    def UseEndAffector(self):
+        self.eva.control_home()
+        Json = toolpath = {
+    "metadata": {
+        "version": 2,
+        "default_max_speed": 0.25,
+        "payload": 0,
+        "analog_modes": {
+            "i0": "voltage",
+            "i1": "voltage",
+            "o0": "voltage",
+            "o1": "voltage"
+        },
+        "next_label_id": 3
+    },
+    "waypoints": [{
+        "label_id": 1,
+        "joints": [0, 0.5235987755982988, -1.7453292519943295, 0, -1.9198621771937625, 0]
+    }, {
+        "label_id": 2,
+        "joints": [0.18392622441053394, 0.8259819316864014, -2.050006151199341, 0.1785774528980255, -1.6037521743774412, -0.549331545829773]
+    }],
+    "timeline": [{
+        "type": "home",
+        "waypoint_id": 0
+    },{"type": "output-set", "io": {"location": "end_effector", "type": "digital", "index": 0}, "value": True},
+        ]
+}
 
+        self.eva.toolpaths_use(Json)
+        self.eva.control_run(loop=1)
 
 if __name__ == '__main__':
     RobotArm = RobotArm()
@@ -48,6 +75,7 @@ if __name__ == '__main__':
     with Eva.lock():
         print('Eva moving to home position')
         RobotArm.GoToHome()
-        RobotArm.MoveEndAffector()
-        
+        RobotArm.UseEndAffector()
+
+       
        
